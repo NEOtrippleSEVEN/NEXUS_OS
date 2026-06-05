@@ -132,10 +132,11 @@ Progression {
 
 ## 7. Generation mechanism — Claude tool-use
 
-Two tools, strict JSON schemas matching the model:
+Three tools, strict JSON schemas matching the model:
 
 - **`generate_path`** — input: mission + constraints. Output (union): a full path (all milestones dated with effort + outcome, **tasks for milestone 1 only**) *or* a `needs_sharpening` result.
 - **`expand_milestone`** — input: one milestone + path context. Output: that milestone's tasks.
+- **`adjust_plan`** — input: current plan + the user's chat message. Output: a routed result — an in-place patch (subtle change), a discussion prompt (ambiguous or bold), or a re-scope trigger (clear, large change). See §10b.
 
 **System prompt** carries the Nexus personality (direct, concrete, no filler, no emoji/exclamation) and a hard realism mandate:
 
@@ -185,11 +186,27 @@ Everything here derives from completion events the engine already emits. It can 
 
 ---
 
+## 10b. Conversational adjustment — the Orb
+
+The user shapes the plan by *talking to it*, not by editing fields or reaching for a "regenerate" button. The Orb chat is a thinking partner about the *current* plan — *"what if I dropped this milestone?"*, *"this deadline feels unrealistic"*, *"can I do X before Y?"*. Regenerate/re-scope is **not** the user-facing lever; it's one of the backends this layer routes to.
+
+The **`adjust_plan`** tool takes the current plan + the user's message and routes by change magnitude:
+
+- **Exploratory** (*"what if…"*) → answer in conversation, mutate nothing until the user commits.
+- **Subtle** (reorder tasks, nudge a date, swap a priority, add or remove a task, reword an outcome) → apply a surgical in-place patch; `pacing` recomputes dates; show the diff. Done.
+- **Bold** (drop or replace a milestone, move the mission target, restructure the back half) → do **not** silently patch. Either open a short discussion to reason it through, or — when the change is clear and large — route to the full re-scope, because regenerating is more honest and efficient than stitching a major change into the existing tree.
+
+The classifier errs toward discussion: when magnitude is ambiguous, it asks rather than guesses. Every applied change is shown as an undoable diff. This puts "the user has control" behind one conversational surface, with surgical-patch and re-scope as *routed backends*, not buttons.
+
+This layer sits on top of the working deterministic engine — generation, dating, and re-plan all function without it — so it's a later build phase, not a blocker for a usable path.
+
+---
+
 ## 11. Module boundary (so it lifts into Django later)
 
 ```
 src/engine/
-  PathEngine.js    orchestrator: generate · expandMilestone · completeMilestone · replan
+  PathEngine.js    orchestrator: generate · expandMilestone · completeMilestone · replan · adjustPlan
   claudeClient.js  talks to the key-proxy        → swap for Django endpoint
   pathStore.js     localStorage read/write        → swap for API
   pacing.js        pure dating + velocity math     (portable, testable)
@@ -221,7 +238,7 @@ Bare but real. The bonsai dot-field and Orb wrap this afterward.
 
 ## 14. Out of scope for V0
 
-- Inline text editing of generated milestones/tasks (regenerate / re-scope covers correction for now).
+- Direct field/grid editing of milestones/tasks — all adjustment flows through the Orb conversation (§10b), not editable form fields.
 - Multiple concurrent paths — one mission, one path.
 - The bonsai/Orb visual shell (separate, already-specced, deferred).
 - Peer/social, sharing, accounts — none.
