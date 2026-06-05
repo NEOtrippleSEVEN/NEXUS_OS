@@ -47,3 +47,21 @@ export function updateStreak(progression, completionDateIso) {
     lastActiveDate: gap === 0 ? lastActiveDate : completionDateIso,
   }
 }
+
+// Pure progression mutation (spec §10 step 4: progression.award). Folds one
+// completion event into a fresh progression: accrues xp, re-derives the level
+// off the curve, ticks the streak, and appends to the award ledger. Never
+// touches pacing — progression derives entirely from completion events.
+export function award(progression, { type, refId, xp, dateIso }) {
+  const nextXp = progression.xp + xp
+  const streakState = updateStreak(progression, dateIso)
+  return {
+    ...progression,
+    xp: nextXp,
+    level: levelForXp(nextXp),
+    streak: streakState.streak,
+    longestStreak: streakState.longestStreak,
+    lastActiveDate: streakState.lastActiveDate,
+    log: [...progression.log, { type, refId, xp, at: dateIso }],
+  }
+}

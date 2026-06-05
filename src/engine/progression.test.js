@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest'
-import { xpForTask, xpForMilestone, xpThreshold, levelForXp, levelProgress, updateStreak } from './progression.js'
+import { xpForTask, xpForMilestone, xpThreshold, levelForXp, levelProgress, updateStreak, award } from './progression.js'
 import { PRIORITY } from './schema.js'
 
 test('xpForTask weights effort hours by priority', () => {
@@ -43,4 +43,36 @@ test('updateStreak increments on consecutive days, holds same-day, resets on a g
 test('updateStreak starts a fresh streak from a null lastActiveDate', () => {
   expect(updateStreak({ streak: 0, longestStreak: 0, lastActiveDate: null }, '2026-06-08'))
     .toEqual({ streak: 1, longestStreak: 1, lastActiveDate: '2026-06-08' })
+})
+
+test('award adds xp, recomputes level, ticks the streak, and logs the event', () => {
+  const fresh = { xp: 0, level: 1, streak: 0, longestStreak: 0, lastActiveDate: null, log: [] }
+  const next = award(fresh, { type: 'task', refId: 't1', xp: 60, dateIso: '2026-06-08' })
+  expect(next.xp).toBe(60)
+  expect(next.level).toBe(1)
+  expect(next.streak).toBe(1)
+  expect(next.longestStreak).toBe(1)
+  expect(next.lastActiveDate).toBe('2026-06-08')
+  expect(next.log).toEqual([{ type: 'task', refId: 't1', xp: 60, at: '2026-06-08' }])
+})
+
+test('award crossing a threshold bumps the level', () => {
+  const prog = { xp: 90, level: 1, streak: 1, longestStreak: 1, lastActiveDate: '2026-06-08', log: [] }
+  const next = award(prog, { type: 'milestone', refId: 'm1', xp: 60, dateIso: '2026-06-09' })
+  expect(next.xp).toBe(150)
+  expect(next.level).toBe(2)
+})
+
+test('award does not mutate the input progression', () => {
+  const prog = { xp: 10, level: 1, streak: 1, longestStreak: 1, lastActiveDate: '2026-06-08', log: [] }
+  award(prog, { type: 'task', refId: 't9', xp: 5, dateIso: '2026-06-09' })
+  expect(prog.xp).toBe(10)
+  expect(prog.log).toEqual([])
+})
+
+test('award holds the streak for a second completion on the same day', () => {
+  const prog = { xp: 10, level: 1, streak: 2, longestStreak: 2, lastActiveDate: '2026-06-08', log: [] }
+  const next = award(prog, { type: 'task', refId: 't2', xp: 5, dateIso: '2026-06-08' })
+  expect(next.streak).toBe(2)
+  expect(next.lastActiveDate).toBe('2026-06-08')
 })
