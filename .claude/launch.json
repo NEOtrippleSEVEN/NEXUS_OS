@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "raster",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd tools/_raster && python3 -m http.server 58690 --bind 127.0.0.1"],
+      "port": 58690
+    }
+  ]
+}
