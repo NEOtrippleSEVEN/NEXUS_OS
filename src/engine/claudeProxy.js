@@ -24,6 +24,19 @@ export async function proxyClaude({
     }
   }
 
+  // Only a JSON object goes upstream. Anything else is garbage or abuse; it
+  // must never be signed with the server-held key.
+  const raw = typeof body === 'string' ? body : JSON.stringify(body)
+  let payload
+  try {
+    payload = JSON.parse(raw)
+  } catch {
+    return { status: 400, body: { error: 'Request body must be valid JSON.' } }
+  }
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+    return { status: 400, body: { error: 'Request body must be a JSON object.' } }
+  }
+
   const upstream = await fetchFn(upstreamUrl, {
     method: 'POST',
     headers: {
@@ -31,7 +44,7 @@ export async function proxyClaude({
       'x-api-key': apiKey,
       'anthropic-version': anthropicVersion,
     },
-    body: typeof body === 'string' ? body : JSON.stringify(body),
+    body: raw,
   })
 
   const text = await upstream.text()

@@ -71,3 +71,14 @@ test('proxyClaude accepts an already-stringified body and forwards it verbatim',
 
   expect(calls[0].init.body).toBe(raw)
 })
+
+test('proxyClaude rejects a body that is not a JSON object with 400 and never calls upstream', async () => {
+  const { fetchFn, calls } = fakeUpstream('{"content":[]}')
+
+  for (const bad of ['not json at all', '"just a string"', '[1,2,3]', '']) {
+    const out = await proxyClaude({ apiKey: 'sk-secret', body: bad, fetchFn })
+    expect(out.status).toBe(400)
+    expect(JSON.stringify(out.body)).toMatch(/JSON/)
+  }
+  expect(calls.length).toBe(0)
+})

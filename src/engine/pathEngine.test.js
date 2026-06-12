@@ -111,6 +111,22 @@ test('generate passes a needs_sharpening result through and does not persist', a
   expect(engine.getPath()).toBeNull()
 })
 
+test('generate rejects bad input before calling the generator (no wasted API call)', async () => {
+  let calls = 0
+  const gen = { generatePath: async () => { calls++; return generated }, expandMilestone: async () => ({ tasks: [] }) }
+  const engine = makePathEngine({
+    store: makePathStore(createMemoryStorage()),
+    generator: gen,
+    clock: () => '2026-06-06',
+    idGen: counterIdGen(),
+  })
+
+  await expect(engine.generate({ mission: '   ', constraints })).rejects.toThrow(/mission/i)
+  await expect(engine.generate({ mission: 'Reach $10k MRR', constraints: { hoursPerWeek: 0 } })).rejects.toThrow(/hoursPerWeek/)
+  await expect(engine.generate({ mission: 'Reach $10k MRR', constraints: { hoursPerWeek: NaN } })).rejects.toThrow(/hoursPerWeek/)
+  expect(calls).toBe(0)
+})
+
 test('generate throws when the assembled path fails validation', async () => {
   const bad = {
     status: 'generated',

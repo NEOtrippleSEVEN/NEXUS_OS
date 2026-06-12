@@ -28,6 +28,14 @@ function defaultClock() {
 
 export function makePathEngine({ store, generator, clock = defaultClock, idGen = defaultIdGen() } = {}) {
   async function generate({ mission, constraints }) {
+    // Pre-flight: reject unusable input before the generator runs. The real
+    // generator is a paid network call; failing after it is money for nothing.
+    if (!mission || !mission.trim()) throw new Error('mission is required')
+    const hours = constraints?.hoursPerWeek
+    if (!(Number.isFinite(hours) && hours > 0)) {
+      throw new Error('constraints.hoursPerWeek must be a positive number')
+    }
+
     const result = await generator.generatePath({ mission, constraints })
 
     if (result.status === 'needs_sharpening') {

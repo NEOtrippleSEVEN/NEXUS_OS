@@ -34,3 +34,10 @@ test('load returns a detached copy, not a live reference into storage', () => {
   first.milestones.push('mutated')
   expect(store.load().milestones).toEqual([])
 })
+
+test('load returns null instead of throwing when storage holds corrupt JSON', () => {
+  const storage = createMemoryStorage()
+  storage.setItem('nexus.path', '{not valid json')
+  const store = makePathStore(storage)
+  expect(store.load()).toBeNull()
+})

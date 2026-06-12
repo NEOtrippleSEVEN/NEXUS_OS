@@ -30,7 +30,14 @@ export function makePathStore(storage = defaultStorage(), key = STORAGE_KEY) {
     },
     load() {
       const raw = storage.getItem(key)
-      return raw == null ? null : JSON.parse(raw)
+      if (raw == null) return null
+      // Corrupt storage (interrupted write, manual edit) reads as "no path" —
+      // the founder regenerates instead of hitting a white screen.
+      try {
+        return JSON.parse(raw)
+      } catch {
+        return null
+      }
     },
     clear() {
       storage.removeItem(key)
