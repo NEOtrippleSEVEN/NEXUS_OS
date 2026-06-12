@@ -25,7 +25,7 @@ import {
 
 // Configurable. For the validation run we want the model whose judgment we
 // most trust on honest-vs-flattering estimates; override via makeClaudeClient.
-export const DEFAULT_MODEL = 'claude-sonnet-4-20250514'
+export const DEFAULT_MODEL = 'claude-opus-4-8'
 export const MAX_TOKENS = 4096
 
 export function makeClaudeClient({
