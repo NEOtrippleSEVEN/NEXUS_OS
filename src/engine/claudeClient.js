@@ -25,7 +25,8 @@ import {
 
 // Configurable. For the validation run we want the model whose judgment we
 // most trust on honest-vs-flattering estimates; override via makeClaudeClient.
-export const DEFAULT_MODEL = 'claude-opus-4-8'
+// Fable 5 ($10/$50 per MTok) is the ceiling; downshift here when cost matters.
+export const DEFAULT_MODEL = 'claude-fable-5'
 export const MAX_TOKENS = 4096
 
 export function makeClaudeClient({
