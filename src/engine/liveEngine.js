@@ -7,6 +7,6 @@
 
 import { makePathEngine } from './pathEngine.js'
 import { pathStore } from './pathStore.js'
-import { claudeClient } from './claudeClient.js'
+import { stubGenerator } from './stubGenerator.js'
 
-export const liveEngine = makePathEngine({ store: pathStore, generator: claudeClient })
+export const liveEngine = makePathEngine({ store: pathStore, generator: stubGenerator })
